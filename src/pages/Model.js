@@ -19,8 +19,8 @@ const Model = (props) => {
   const [ceMax, setCEmax] = useState([]);
   const [peMax, setPEmax] = useState([]);
   // let name = props.name
+  localStorage.setItem("name", props.namess);
 
-  //   console.log('props.name',props.name);
   useEffect(() => {
     setLiveprice([]);
     setTimeStamp([]);
@@ -41,128 +41,125 @@ const Model = (props) => {
     return () => clearInterval(interval);
   }, []);
 
-  localStorage.setItem("name", props.namess);
-
   async function getApiData() {
     let d = localStorage.getItem("name");
+    if (d !== null) {
+      await axios.get(PCR_STOCK_URL + d).then((json) => {
+        let time_stamp = json.data.records.timestamp;
 
-    await axios.get(PCR_STOCK_URL + d).then((json) => {
-      let time_stamp = json.data.records.timestamp;
-      setTimeStamp(time_stamp);
+        setTimeStamp(time_stamp);
 
-      let liveprices = json.data.records.underlyingValue;
-      setLiveprice(liveprices);
-      // < ----------------- PCR Value ------------------------------->
-      const sum = json.data.filtered.CE.totOI;
-      const sum2 = json.data.filtered.PE.totOI;
-      const pcR = sum2 / sum;
-      let PCR = pcR.toFixed(2);
-      setPcrValue(PCR);
-      // < ---------------- LessThanLive -------------------------------->
-      let down_price = json.data.filtered.data.filter((val) => {
-        let r = val.strikePrice;
-        return r <= liveprices;
-      });
-      setLessThanLive(down_price);
-      // < ---------------- GraterThan -------------------------------->
-      let up_price = json.data.filtered.data.filter((val) => {
-        let r = val.strikePrice;
-        return r >= liveprices;
-      });
-      setGraterThan(up_price);
-      // < ------------------------------------------------>
-      let PE_CE_SUM = down_price.slice(-5).map((val) => {
-        var ss = val?.PE?.openInterest + val?.PE?.changeinOpenInterest;
-        return ss;
-      });
-      let compare = (a, b) => {
-        return b - a;
-      };
-      const numAscending = PE_CE_SUM.sort(compare);
-      const num = numAscending.slice(0, 1);
-      // < ------------------------------------------------>
-      let CE_PE_SUM = up_price.slice(0, 5).map((val) => {
-        var ss = val?.CE?.openInterest + val?.CE?.changeinOpenInterest;
-        return ss;
-      });
-      let compare1 = (a, b) => {
-        return b - a;
-      };
-      const numAscending1 = CE_PE_SUM.sort(compare1);
-      const num1 = numAscending1.slice(0, 1);
-      // < ---------------- Pemax -------------------------------->
-      const PE_present_price = [];
-      const PE_present_price2 = [];
-      down_price.filter((ab) => {
-        let r = ab?.PE?.changeinOpenInterest + ab?.PE?.openInterest;
-        if (r === num[0]) {
-          PE_present_price.push(ab);
-          PE_present_price2.push(ab.strikePrice);
+        let liveprices = json.data.records.underlyingValue;
+        setLiveprice(liveprices);
+        // < ----------------- PCR Value ------------------------------->
+        const sum = json.data.filtered.CE.totOI;
+        const sum2 = json.data.filtered.PE.totOI;
+        const pcR = sum2 / sum;
+        let PCR = pcR.toFixed(2);
+        setPcrValue(PCR);
+        // < ---------------- LessThanLive -------------------------------->
+        let down_price = json.data.filtered.data.filter((val) => {
+          let r = val.strikePrice;
+          return r <= liveprices;
+        });
+        setLessThanLive(down_price);
+        // < ---------------- GraterThan -------------------------------->
+        let up_price = json.data.filtered.data.filter((val) => {
+          let r = val.strikePrice;
+          return r >= liveprices;
+        });
+        setGraterThan(up_price);
+        // < ------------------------------------------------>
+        let PE_CE_SUM = down_price.slice(-5).map((val) => {
+          var ss = val?.PE?.openInterest + val?.PE?.changeinOpenInterest;
+          return ss;
+        });
+        let compare = (a, b) => {
+          return b - a;
+        };
+        const numAscending = PE_CE_SUM.sort(compare);
+        const num = numAscending.slice(0, 1);
+        // < ------------------------------------------------>
+        let CE_PE_SUM = up_price.slice(0, 5).map((val) => {
+          var ss = val?.CE?.openInterest + val?.CE?.changeinOpenInterest;
+          return ss;
+        });
+        let compare1 = (a, b) => {
+          return b - a;
+        };
+        const numAscending1 = CE_PE_SUM.sort(compare1);
+        const num1 = numAscending1.slice(0, 1);
+        // < ---------------- Pemax -------------------------------->
+        const PE_present_price = [];
+        const PE_present_price2 = [];
+        down_price.filter((ab) => {
+          let r = ab?.PE?.changeinOpenInterest + ab?.PE?.openInterest;
+          if (r === num[0]) {
+            PE_present_price.push(ab);
+            PE_present_price2.push(ab.strikePrice);
+          }
+          return ab;
+        });
+        setPEmax(PE_present_price);
+        // < ----------------- CEmax ------------------------------->
+        const CE_present_price = [];
+        const CE_present_price2 = [];
+        up_price.map((ab) => {
+          let r = ab?.CE?.changeinOpenInterest + ab?.CE?.openInterest;
+          if (r === num1[0]) {
+            CE_present_price.push(ab);
+            CE_present_price2.push(ab.strikePrice);
+          }
+          return ab;
+        });
+        setCEmax(CE_present_price);
+
+        let d = num - num1;
+        console.log(d);
+
+        if (d > 0) {
+          try {
+            const article = {
+              pcr: PCR,
+              name: localStorage.getItem("name"),
+              PE_CE_diffrent: true,
+            };
+            console.log(article);
+
+            axios({
+              method: "put",
+              url: PCR_VALUE_API,
+              // mode: "cors",
+              data: article,
+            }).then((response) => {
+              console.log(response.data);
+            });
+          } catch (err) {
+            console.log("Error", err.response);
+          }
+        } else {
+          try {
+            const article = {
+              pcr: PCR,
+              name: localStorage.getItem("name"),
+              PE_CE_diffrent: false,
+            };
+            console.log(article);
+
+            axios({
+              method: "put",
+              url: PCR_VALUE_API,
+              // mode: "cors",
+              data: article,
+            }).then((response) => {
+              console.log(response.data);
+            });
+          } catch (err) {
+            console.log("Error", err.response);
+          }
         }
-        return ab;
       });
-      setPEmax(PE_present_price);
-      // < ----------------- CEmax ------------------------------->
-      const CE_present_price = [];
-      const CE_present_price2 = [];
-      up_price.map((ab) => {
-        let r = ab?.CE?.changeinOpenInterest + ab?.CE?.openInterest;
-        if (r === num1[0]) {
-          CE_present_price.push(ab);
-          CE_present_price2.push(ab.strikePrice);
-        }
-        return ab;
-      });
-      setCEmax(CE_present_price);
-
-      let d = num - num1;
-      console.log(d);
-
-
-      if (d > 0) {
-       
-        try {
-          
-          const article = {
-            pcr: PCR,
-            name: localStorage.getItem("name"),
-            PE_CE_diffrent: true,
-          };
-          console.log(article);
-
-          axios({
-            method: "put",
-            url: PCR_VALUE_API,
-            // mode: "cors",
-            data: article,
-          }).then((response) => {
-            console.log(response.data);
-          });
-        } catch (err) {
-          console.log("Error", err.response);
-        }
-      } else {
-        try {
-          const article = {
-            pcr: PCR,
-            name: localStorage.getItem("name"),
-            PE_CE_diffrent: false,
-          };
-          console.log(article);
-
-          axios({
-            method: "put",
-            url: PCR_VALUE_API,
-            // mode: "cors",
-            data: article,
-          }).then((response) => {
-            console.log(response.data);
-          });
-        } catch (err) {
-          console.log("Error", err.response);
-        }
-      }
-    });
+    }
   }
   //   const [isModalOpen, setIsModalOpen] = useState(false);
 

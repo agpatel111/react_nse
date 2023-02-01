@@ -15,6 +15,7 @@ import Nsetable from "./nse/nsetable";
 import PcrChart from "./pages/PcrChart";
 import Item from "./nse/item";
 import Model from "./pages/Model";
+import FixHeaderTable from "./pages/chart";
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
             <Route path='/pcr' element={<PcrValues />} />
             <Route path='/demo' element={<Nsetable />} />
             <Route path='/pcrchart/:name' element={<PcrChart />} />
+            <Route path='/chart' element={<FixHeaderTable />} />
             {/* <Route path='/model' element={<Model />} /> */}
             
           </Routes>
